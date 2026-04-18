@@ -1,6 +1,6 @@
 {
   "name": "@lgariv/webreel",
-  "version": "0.1.4-beta-20260418T161628Z",
+  "version": "0.1.4-beta-20260418T165223Z",
   "description": "Record scripted browser demos as MP4, GIF, or WebM with cursor animation, keystroke overlays, sound effects, and cinematic autozoom. Fork of vercel-labs/webreel.",
   "homepage": "https://github.com/lgariv-dn/webreel",
   "repository": {

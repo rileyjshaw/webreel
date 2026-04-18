@@ -111,55 +111,8 @@ async function compositeFrames(
 ): Promise<void> {
   const { width, height, fps } = timeline;
 
-  // When autozoom is requested we split into two ffmpeg invocations. Combining
-  // image2pipe stdin + overlay + zoompan in a single filter_complex deadlocks:
-  // zoompan's internal buffering backpressures onto overlay, which backpressures
-  // onto the pipe reader, but Node has already flushed and ended stdin — the
-  // filter graph can't drain and ffmpeg sits at 0% CPU with no stderr. Running
-  // zoompan as a second pass on the overlay-only intermediate avoids this.
-  const overlayStagePath = zoomFilter
-    ? resolve(homedir(), ".webreel", `_overlay_${Date.now()}.mp4`)
-    : outputPath;
-
-  const ffmpeg = spawn(
-    ffmpegPath,
-    [
-      "-y",
-      "-i",
-      cleanVideoPath,
-      "-f",
-      "image2pipe",
-      "-framerate",
-      String(fps),
-      "-c:v",
-      "png",
-      "-i",
-      "pipe:0",
-      "-filter_complex",
-      "[0][1]overlay=0:0:shortest=1",
-      "-c:v",
-      "libx264",
-      "-preset",
-      "ultrafast",
-      "-crf",
-      String(crf),
-      "-pix_fmt",
-      "yuv420p",
-      "-color_primaries",
-      "bt709",
-      "-color_trc",
-      "bt709",
-      "-colorspace",
-      "bt709",
-      "-movflags",
-      "+faststart",
-      "-r",
-      String(fps),
-      overlayStagePath,
-    ],
-    { stdio: ["pipe", "pipe", "pipe"] },
-  );
-
+  // Build the overlay context once — sharp metadata and cursor-scale caches
+  // are identical across stages, so we share the context.
   const cursorMeta = await sharp(cursorPng).metadata();
   if (!cursorMeta.width || !cursorMeta.height) {
     throw new Error("Failed to read cursor image dimensions from sharp metadata");
@@ -195,6 +148,122 @@ async function compositeFrames(
     zoom,
     hudConfig: timeline.theme.hud,
   };
+
+  // Pipeline layering:
+  //   - No autozoom: single overlay pass draws cursor+HUD on raw → output.
+  //   - Autozoom:    three sequential ffmpeg invocations. Stage A overlays
+  //                  cursor-only (not HUD) on raw. Stage B applies zoompan
+  //                  on the cursor-overlaid intermediate. Stage C overlays
+  //                  HUD on the zoomed frame. HUD stays at the final
+  //                  viewport coordinates regardless of how the camera
+  //                  crops/scales — captions never get cropped by zoom.
+  //
+  // Why three stages instead of one? (1) zoompan + image2pipe in the same
+  // filter_complex deadlocks when the pipe reader can't drain fast enough
+  // (see detailed note in the original single-pass version of this file).
+  // (2) HUD on top of the zoomed frame must run after zoompan or it gets
+  // cropped out of the camera window.
+  if (!zoomFilter) {
+    await runOverlayStage(
+      ffmpegPath,
+      cleanVideoPath,
+      timeline,
+      ctx,
+      "both",
+      outputPath,
+      crf,
+      fps,
+      width,
+      height,
+    );
+    return;
+  }
+
+  const cursorStagePath = resolve(homedir(), ".webreel", `_cursor_${Date.now()}.mp4`);
+  const zoomStagePath = resolve(homedir(), ".webreel", `_zoom_${Date.now()}.mp4`);
+
+  try {
+    await runOverlayStage(
+      ffmpegPath,
+      cleanVideoPath,
+      timeline,
+      ctx,
+      "cursor",
+      cursorStagePath,
+      crf,
+      fps,
+      width,
+      height,
+    );
+    await applyZoomPass(ffmpegPath, cursorStagePath, zoomFilter, zoomStagePath, crf, fps);
+    await runOverlayStage(
+      ffmpegPath,
+      zoomStagePath,
+      timeline,
+      ctx,
+      "hud",
+      outputPath,
+      crf,
+      fps,
+      width,
+      height,
+    );
+  } finally {
+    rmSync(cursorStagePath, { force: true });
+    rmSync(zoomStagePath, { force: true });
+  }
+}
+
+async function runOverlayStage(
+  ffmpegPath: string,
+  inputPath: string,
+  timeline: TimelineData,
+  ctx: OverlayContext,
+  layer: OverlayLayer,
+  outputPath: string,
+  crf: number,
+  fps: number,
+  width: number,
+  height: number,
+): Promise<void> {
+  const ffmpeg = spawn(
+    ffmpegPath,
+    [
+      "-y",
+      "-i",
+      inputPath,
+      "-f",
+      "image2pipe",
+      "-framerate",
+      String(fps),
+      "-c:v",
+      "png",
+      "-i",
+      "pipe:0",
+      "-filter_complex",
+      "[0][1]overlay=0:0:shortest=1",
+      "-c:v",
+      "libx264",
+      "-preset",
+      "ultrafast",
+      "-crf",
+      String(crf),
+      "-pix_fmt",
+      "yuv420p",
+      "-color_primaries",
+      "bt709",
+      "-color_trc",
+      "bt709",
+      "-colorspace",
+      "bt709",
+      "-movflags",
+      "+faststart",
+      "-r",
+      String(fps),
+      outputPath,
+    ],
+    { stdio: ["pipe", "pipe", "pipe"] },
+  );
 
   const overlayCache = new Map<string, Buffer>();
   const hudCache = new Map<string, sharp.OverlayOptions>();
@@ -244,6 +313,7 @@ async function compositeFrames(
       ctx,
       overlayCache,
       hudCache,
+      layer,
     );
 
     if (stdinClosed) break;
@@ -270,21 +340,13 @@ async function compositeFrames(
         const stderr = Buffer.concat(stderrChunks).toString().slice(-2000);
         rejectAll(
           new Error(
-            `Compositor ffmpeg exited with code ${code}${stderr ? `:\n${stderr}` : ""}`,
+            `Overlay-stage ffmpeg (layer=${layer}) exited with code ${code}${stderr ? `:\n${stderr}` : ""}`,
           ),
         );
       }
     });
     ffmpeg.on("error", rejectAll);
   });
-
-  if (zoomFilter) {
-    try {
-      await applyZoomPass(ffmpegPath, overlayStagePath, zoomFilter, outputPath, crf, fps);
-    } finally {
-      rmSync(overlayStagePath, { force: true });
-    }
-  }
 }
 
 async function applyZoomPass(
@@ -346,6 +408,8 @@ async function applyZoomPass(
   });
 }
 
+type OverlayLayer = "both" | "cursor" | "hud";
+
 async function renderOverlayFrame(
   frame: TimelineData["frames"][number],
   width: number,
@@ -353,12 +417,13 @@ async function renderOverlayFrame(
   ctx: OverlayContext,
   cache: Map<string, Buffer>,
   hudCache: Map<string, sharp.OverlayOptions>,
+  layer: OverlayLayer = "both",
 ): Promise<Buffer> {
   const cx = Math.round(frame.cursor.x * ctx.zoom * 10) / 10;
   const cy = Math.round(frame.cursor.y * ctx.zoom * 10) / 10;
   const scale = frame.cursor.scale;
   const hudKey = frame.hud ? frame.hud.labels.join("|") : "";
-  const cacheKey = `${cx},${cy},${scale},${hudKey}`;
+  const cacheKey = `${layer}:${cx},${cy},${scale},${hudKey}`;
 
   const cached = cache.get(cacheKey);
   if (cached) return cached;
@@ -370,7 +435,10 @@ async function renderOverlayFrame(
   const cursorVisible =
     icx >= -ctx.cursorWidth && icx < width && icy >= -ctx.cursorHeight && icy < height;
 
-  if (cursorVisible) {
+  const wantCursor = layer !== "hud";
+  const wantHud = layer !== "cursor";
+
+  if (wantCursor && cursorVisible) {
     const cursorImg = scale !== 1 ? await ctx.getScaledCursor(scale) : ctx.cursorPng;
     const left = Math.max(0, icx);
     const top = Math.max(0, icy);
@@ -380,7 +448,7 @@ async function renderOverlayFrame(
     }
   }
 
-  if (frame.hud && frame.hud.labels.length > 0) {
+  if (wantHud && frame.hud && frame.hud.labels.length > 0) {
     const hudOverlay = await renderHudOverlay(
       frame.hud.labels,
       width,
