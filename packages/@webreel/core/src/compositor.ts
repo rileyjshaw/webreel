@@ -21,6 +21,7 @@ interface OverlayContext {
 export interface ComposeOptions {
   sfx?: SfxConfig;
   crf?: number;
+  zoomFilter?: string;
 }
 
 export async function compose(
@@ -53,6 +54,7 @@ export async function compose(
       zoom,
       tempComposed,
       crf,
+      options?.zoomFilter,
     );
 
     const ext = extname(outputPath).toLowerCase();
@@ -105,8 +107,12 @@ async function compositeFrames(
   zoom: number,
   outputPath: string,
   crf: number,
+  zoomFilter?: string,
 ): Promise<void> {
   const { width, height, fps } = timeline;
+
+  const baseFilter = "[0][1]overlay=0:0:shortest=1";
+  const filterComplex = zoomFilter ? `${baseFilter},${zoomFilter}` : baseFilter;
 
   const ffmpeg = spawn(
     ffmpegPath,
@@ -123,7 +129,7 @@ async function compositeFrames(
       "-i",
       "pipe:0",
       "-filter_complex",
-      "[0][1]overlay=0:0:shortest=1",
+      filterComplex,
       "-c:v",
       "libx264",
       "-preset",
