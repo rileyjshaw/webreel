@@ -352,7 +352,11 @@ async function renderHudOverlay(
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
 
-  const svgOverlay = `<svg xmlns="http://www.w3.org/2000/svg" width="${hudWidth}" height="${hudHeight}">
+  const margin = Math.round(48 * zoom);
+  const maxHudWidth = Math.max(100, viewportWidth - margin * 2);
+  const renderedHudWidth = Math.min(hudWidth, maxHudWidth);
+
+  const svgOverlay = `<svg xmlns="http://www.w3.org/2000/svg" width="${renderedHudWidth}" height="${hudHeight}" viewBox="0 0 ${hudWidth} ${hudHeight}" preserveAspectRatio="xMidYMid meet">
       <rect x="0" y="0" width="${hudWidth}" height="${hudHeight}" rx="${borderRadius}" ry="${borderRadius}" fill="${escAttr(hudConfig.background)}" />
       <text x="${textX}" y="${textY}" text-anchor="middle"
         font-family="${escAttr(hudConfig.fontFamily)}" font-size="${fontSize}" font-weight="500"
@@ -360,8 +364,7 @@ async function renderHudOverlay(
     </svg>`;
 
   const hudPng = await sharp(Buffer.from(svgOverlay)).png().toBuffer();
-  const left = Math.round((viewportWidth - hudWidth) / 2);
-  const margin = Math.round(48 * zoom);
+  const left = Math.round((viewportWidth - renderedHudWidth) / 2);
   const top = hudConfig.position === "top" ? margin : viewportHeight - hudHeight - margin;
 
   const result: sharp.OverlayOptions = { input: hudPng, left, top };
