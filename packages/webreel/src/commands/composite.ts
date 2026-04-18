@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { readFileSync, existsSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
-import { compose, type TimelineData } from "@webreel/core";
+import { compose, type TimelineData } from "@lgariv/webreel-core";
 import {
   loadWebreelConfig,
   resolveConfigPath,
