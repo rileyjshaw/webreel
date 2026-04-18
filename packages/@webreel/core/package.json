@@ -1,6 +1,6 @@
 {
   "name": "@lgariv/webreel-core",
-  "version": "0.1.4",
+  "version": "0.1.4-beta-20260418T145700Z",
   "description": "Core recording engine for @lgariv/webreel (fork of vercel-labs/webreel) — headless Chrome capture, cursor animation, video compositing, autozoom.",
   "homepage": "https://github.com/lgariv-dn/webreel",
   "repository": {
