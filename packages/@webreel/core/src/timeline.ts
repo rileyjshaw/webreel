@@ -1,5 +1,6 @@
 import { writeFileSync } from "node:fs";
 import type { Point, SoundEvent } from "./types.js";
+import type { ZoomEvent } from "./autozoom.js";
 import {
   TARGET_FPS,
   DEFAULT_CURSOR_SVG,
@@ -44,6 +45,7 @@ export interface TimelineData {
   };
   frames: FrameData[];
   events: SoundEvent[];
+  zoomEvents?: ZoomEvent[];
 }
 
 export class InteractionTimeline {

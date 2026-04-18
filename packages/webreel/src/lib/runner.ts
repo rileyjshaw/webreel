@@ -116,7 +116,7 @@ export function randomPointInBox(
   };
 }
 
-function normalizeAutoZoom(value: VideoConfig["autoZoom"]): AutoZoomConfig {
+export function normalizeAutoZoom(value: VideoConfig["autoZoom"]): AutoZoomConfig {
   if (value === true) return { enabled: true };
   if (value === false || value === undefined) return { enabled: false };
   return { ...value, enabled: value.enabled ?? true };
@@ -589,6 +589,9 @@ export async function runVideo(
 
       if (timeline) {
         const timelineData = timeline.toJSON();
+        if (zoomEvents.length > 0) {
+          timelineData.zoomEvents = zoomEvents;
+        }
         const metadataDir = resolve(configDir, ".webreel", "timelines");
         mkdirSync(metadataDir, { recursive: true });
         writeFileSync(
