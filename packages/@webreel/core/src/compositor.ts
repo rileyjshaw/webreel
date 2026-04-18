@@ -111,8 +111,15 @@ async function compositeFrames(
 ): Promise<void> {
   const { width, height, fps } = timeline;
 
-  const baseFilter = "[0][1]overlay=0:0:shortest=1";
-  const filterComplex = zoomFilter ? `${baseFilter},${zoomFilter}` : baseFilter;
+  // When autozoom is requested we split into two ffmpeg invocations. Combining
+  // image2pipe stdin + overlay + zoompan in a single filter_complex deadlocks:
+  // zoompan's internal buffering backpressures onto overlay, which backpressures
+  // onto the pipe reader, but Node has already flushed and ended stdin — the
+  // filter graph can't drain and ffmpeg sits at 0% CPU with no stderr. Running
+  // zoompan as a second pass on the overlay-only intermediate avoids this.
+  const overlayStagePath = zoomFilter
+    ? resolve(homedir(), ".webreel", `_overlay_${Date.now()}.mp4`)
+    : outputPath;
 
   const ffmpeg = spawn(
     ffmpegPath,
@@ -129,7 +136,7 @@ async function compositeFrames(
       "-i",
       "pipe:0",
       "-filter_complex",
-      filterComplex,
+      "[0][1]overlay=0:0:shortest=1",
       "-c:v",
       "libx264",
       "-preset",
@@ -148,7 +155,7 @@ async function compositeFrames(
       "+faststart",
       "-r",
       String(fps),
-      outputPath,
+      overlayStagePath,
     ],
     { stdio: ["pipe", "pipe", "pipe"] },
   );
@@ -195,9 +202,40 @@ async function compositeFrames(
   const stdin = ffmpeg.stdin;
   if (!stdin) throw new Error("ffmpeg process has no stdin pipe");
 
-  const drain = (): Promise<void> => new Promise((res) => stdin.once("drain", res));
+  // ffmpeg may close its read side of the pipe early when `overlay=shortest=1`
+  // truncates to the shorter input (e.g., raw video has fewer frames than the
+  // timeline). Node surfaces that as an EPIPE 'error' event on stdin and an
+  // uncaught error will crash the process. Swallow it and stop writing — the
+  // frames already fed are enough for ffmpeg to produce output up to the
+  // truncation point.
+  let stdinClosed = false;
+  stdin.on("error", (err) => {
+    const nodeErr = err as NodeJS.ErrnoException;
+    if (nodeErr && nodeErr.code === "EPIPE") {
+      stdinClosed = true;
+    } else {
+      throw err;
+    }
+  });
+
+  // Wait for the stream's buffer to drain. Races against the error event so
+  // we don't hang forever if ffmpeg closed the read side before drain fires.
+  const drain = (): Promise<void> =>
+    new Promise((res) => {
+      const onDrain = () => {
+        stdin.off("error", onError);
+        res();
+      };
+      const onError = () => {
+        stdin.off("drain", onDrain);
+        res();
+      };
+      stdin.once("drain", onDrain);
+      stdin.once("error", onError);
+    });
 
   for (let i = 0; i < timeline.frames.length; i++) {
+    if (stdinClosed) break;
     const frame = timeline.frames[i];
     const overlayPng = await renderOverlayFrame(
       frame,
@@ -208,11 +246,18 @@ async function compositeFrames(
       hudCache,
     );
 
+    if (stdinClosed) break;
     const ok = stdin.write(overlayPng);
     if (!ok) await drain();
   }
 
-  stdin.end();
+  if (!stdin.writableEnded) {
+    try {
+      stdin.end();
+    } catch {
+      // stream may already be errored — safe to ignore
+    }
+  }
 
   const stderrChunks: Buffer[] = [];
   ffmpeg.stderr?.on("data", (chunk: Buffer) => stderrChunks.push(chunk));
@@ -226,6 +271,73 @@ async function compositeFrames(
         rejectAll(
           new Error(
             `Compositor ffmpeg exited with code ${code}${stderr ? `:\n${stderr}` : ""}`,
+          ),
+        );
+      }
+    });
+    ffmpeg.on("error", rejectAll);
+  });
+
+  if (zoomFilter) {
+    try {
+      await applyZoomPass(ffmpegPath, overlayStagePath, zoomFilter, outputPath, crf, fps);
+    } finally {
+      rmSync(overlayStagePath, { force: true });
+    }
+  }
+}
+
+async function applyZoomPass(
+  ffmpegPath: string,
+  inputPath: string,
+  zoomFilter: string,
+  outputPath: string,
+  crf: number,
+  fps: number,
+): Promise<void> {
+  const ffmpeg = spawn(
+    ffmpegPath,
+    [
+      "-y",
+      "-i",
+      inputPath,
+      "-vf",
+      zoomFilter,
+      "-c:v",
+      "libx264",
+      "-preset",
+      "ultrafast",
+      "-crf",
+      String(crf),
+      "-pix_fmt",
+      "yuv420p",
+      "-color_primaries",
+      "bt709",
+      "-color_trc",
+      "bt709",
+      "-colorspace",
+      "bt709",
+      "-movflags",
+      "+faststart",
+      "-r",
+      String(fps),
+      outputPath,
+    ],
+    { stdio: ["ignore", "pipe", "pipe"] },
+  );
+
+  const stderrChunks: Buffer[] = [];
+  ffmpeg.stderr?.on("data", (chunk: Buffer) => stderrChunks.push(chunk));
+
+  await new Promise<void>((resolveAll, rejectAll) => {
+    ffmpeg.on("close", (code) => {
+      if (code === 0) {
+        resolveAll();
+      } else {
+        const stderr = Buffer.concat(stderrChunks).toString().slice(-2000);
+        rejectAll(
+          new Error(
+            `Zoom-pass ffmpeg exited with code ${code}${stderr ? `:\n${stderr}` : ""}`,
           ),
         );
       }
