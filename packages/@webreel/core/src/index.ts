@@ -51,3 +51,8 @@ export {
   type ZoomEvent,
   type ZoomKeyframe,
 } from "./autozoom.js";
+export {
+  installRevealObserver,
+  collectReveals,
+  type RevealObserverHandle,
+} from "./revealObserver.js";
