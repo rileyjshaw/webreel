@@ -303,7 +303,7 @@ const VALID_ACTIONS = new Set([
   "select",
 ]);
 
-const KNOWN_TOP_LEVEL_KEYS = new Set([
+export const KNOWN_TOP_LEVEL_KEYS = new Set([
   "$schema",
   "outDir",
   "baseUrl",
@@ -317,7 +317,7 @@ const KNOWN_TOP_LEVEL_KEYS = new Set([
   "videos",
 ]);
 
-const KNOWN_VIDEO_KEYS = new Set([
+export const KNOWN_VIDEO_KEYS = new Set([
   "url",
   "baseUrl",
   "viewport",
@@ -337,7 +337,7 @@ const KNOWN_VIDEO_KEYS = new Set([
   "steps",
 ]);
 
-const KNOWN_STEP_KEYS: Record<string, Set<string>> = {
+export const KNOWN_STEP_KEYS: Record<string, Set<string>> = {
   pause: new Set(["action", "ms", "label", "description"]),
   click: new Set([
     "action",
