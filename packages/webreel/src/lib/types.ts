@@ -196,6 +196,12 @@ export interface VideoConfig {
   defaultDelay?: number;
   clickDwell?: number;
   autoZoom?: AutoZoomConfig | boolean;
+  /**
+   * Multiplier on how fast the cursor travels between targets. 1 is the
+   * default pace, 2 covers the same ground in half the time. Does not affect
+   * typing speed, click dwell or step delays.
+   */
+  cursorSpeed?: number;
   steps: Step[];
 }
 
@@ -209,5 +215,11 @@ export interface WebreelConfig {
   include?: string[];
   defaultDelay?: number;
   clickDwell?: number;
+  /**
+   * Multiplier on how fast the cursor travels between targets. 1 is the
+   * default pace, 2 covers the same ground in half the time. Does not affect
+   * typing speed, click dwell or step delays.
+   */
+  cursorSpeed?: number;
   videos: VideoConfig[];
 }
