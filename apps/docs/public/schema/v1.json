@@ -302,6 +302,69 @@
           "minimum": 0,
           "description": "Milliseconds the cursor pauses after reaching its target before clicking. Overrides the top-level clickDwell."
         },
+        "autoZoom": {
+          "description": "Ease the camera into each click or keystroke target during recording. true enables it with the defaults; an object overrides individual timings.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Turn autozoom on or off."
+                },
+                "approachS": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Seconds the camera takes to ease in toward a target."
+                },
+                "settleBeforeS": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Seconds the camera settles before the interaction lands."
+                },
+                "holdAfterS": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Seconds the camera holds after the interaction."
+                },
+                "releaseS": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Seconds the camera takes to release back to the full viewport."
+                },
+                "paddingRatio": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Padding around the target as a ratio of the crop."
+                },
+                "minZoomRatio": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Smallest crop as a ratio of the viewport; larger values zoom less."
+                },
+                "skipZoomRatio": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Targets larger than this ratio of the viewport are not zoomed."
+                },
+                "sessionGapS": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Gap in seconds after which two interactions form separate pan sessions."
+                },
+                "minPanS": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Shortest pan duration in seconds."
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
         "cursorSpeed": {
           "type": "number",
           "exclusiveMinimum": 0,
