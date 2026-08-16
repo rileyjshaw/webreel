@@ -35,7 +35,7 @@ import {
   collectReveals,
   type RevealObserverHandle,
   DEFAULT_VIEWPORT_SIZE,
-} from "@lgariv/webreel-core";
+} from "@webreel/core";
 import type { VideoConfig, Step, ElementTarget } from "./types.js";
 
 export function formatStep(i: number, step: Step): string {

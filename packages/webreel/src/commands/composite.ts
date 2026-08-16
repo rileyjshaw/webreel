@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { readFileSync, existsSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
-import { buildAutoZoomFilter, compose, type TimelineData } from "@lgariv/webreel-core";
+import { buildAutoZoomFilter, compose, type TimelineData } from "@webreel/core";
 import {
   loadWebreelConfig,
   resolveConfigPath,

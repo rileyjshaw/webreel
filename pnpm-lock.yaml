@@ -133,7 +133,7 @@ importers:
 
   packages/webreel:
     dependencies:
-      '@lgariv/webreel-core':
+      '@webreel/core':
         specifier: workspace:*
         version: link:../@webreel/core
       commander:

@@ -1,15 +1,13 @@
-# @lgariv/webreel-core
+# @webreel/core
 
-> **Fork notice.** This is a fork of [`@webreel/core`](https://github.com/vercel-labs/webreel) with added autozoom filter generation and a click-revealed UI mutation observer. Original work © Vercel, licensed under Apache 2.0. Modifications in [`lgariv-dn/webreel`](https://github.com/lgariv-dn/webreel).
+Chrome automation, recording, and overlay engine for webreel.
 
-Chrome automation, recording, and overlay engine for `@lgariv/webreel`.
-
-Launches a headless Chrome instance via the Chrome DevTools Protocol, captures screenshots at ~60fps, and encodes the result to MP4 with ffmpeg. Provides actions for clicking, typing, dragging, and cursor animation, plus on-screen overlays for keystroke labels, a custom cursor, and optional autozoom filters for cinematic framing.
+Launches a headless Chrome instance via the Chrome DevTools Protocol, captures screenshots at ~60fps, and encodes the result to MP4 with ffmpeg. Provides actions for clicking, typing, dragging, and cursor animation, plus on-screen overlays for keystroke labels and a custom cursor.
 
 ## Installation
 
 ```bash
-npm install @lgariv/webreel-core
+npm install @webreel/core
 ```
 
 ## Examples
