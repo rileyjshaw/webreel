@@ -676,6 +676,27 @@ export async function typeText(
 }
 
 /**
+ * Centre to centre endpoints for a drag. With an axis locked the target only
+ * supplies the position along that axis and the drag holds where it started on
+ * the other one, which is what sliders and scrubbers need: the anchors near
+ * either end of a track usually sit on a different row than the thumb.
+ */
+export function dragEndpoints(
+  fromBox: BoundingBox,
+  toBox: BoundingBox,
+  axis?: "x" | "y",
+): { fx: number; fy: number; tx: number; ty: number } {
+  const fx = fromBox.x + fromBox.width / 2;
+  const fy = fromBox.y + fromBox.height / 2;
+  return {
+    fx,
+    fy,
+    tx: axis === "y" ? fx : toBox.x + toBox.width / 2,
+    ty: axis === "x" ? fy : toBox.y + toBox.height / 2,
+  };
+}
+
+/**
  * Strips the attributes that make a cloned drag ghost answer to the same
  * selectors as the element it was cloned from. Serialised into the page, so it
  * has to stay self-contained.
@@ -703,11 +724,9 @@ export async function dragFromTo(
   client: CDPClient,
   fromBox: BoundingBox,
   toBox: BoundingBox,
+  options?: { axis?: "x" | "y" },
 ): Promise<void> {
-  const fx = fromBox.x + fromBox.width / 2;
-  const fy = fromBox.y + fromBox.height / 2;
-  const tx = toBox.x + toBox.width / 2;
-  const ty = toBox.y + toBox.height / 2;
+  const { fx, fy, tx, ty } = dragEndpoints(fromBox, toBox, options?.axis);
 
   const isRecording = ctx.isRecording;
 

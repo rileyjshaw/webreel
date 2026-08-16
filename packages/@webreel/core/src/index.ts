@@ -34,6 +34,7 @@ export {
   pressKey,
   typeText,
   dragFromTo,
+  dragEndpoints,
   stripGhostIdentity,
   captureScreenshot,
 } from "./actions.js";

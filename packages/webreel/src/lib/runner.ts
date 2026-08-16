@@ -47,7 +47,7 @@ export function formatStep(i: number, step: Step): string {
     case "wait":
       return `[step ${i}] wait ${step.selector ? `selector="${step.selector}"` : `text="${step.text}"`}${desc}`;
     case "drag":
-      return `[step ${i}] drag${desc}`;
+      return `[step ${i}] drag${step.axis ? ` axis="${step.axis}"` : ""}${desc}`;
     case "moveTo":
       return `[step ${i}] moveTo ${step.text ? `text="${step.text}"` : `selector="${step.selector}"`}${desc}`;
     case "screenshot":
@@ -286,7 +286,7 @@ export async function runVideo(
           case "drag": {
             const fromBox = await resolveTarget(client, step.from, "drag from");
             const toBox = await resolveTarget(client, step.to, "drag to");
-            await dragFromTo(ctx, client, fromBox, toBox);
+            await dragFromTo(ctx, client, fromBox, toBox, { axis: step.axis });
             break;
           }
 

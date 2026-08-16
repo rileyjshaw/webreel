@@ -35,6 +35,13 @@ export interface StepDrag {
   action: "drag";
   from: ElementTarget;
   to: ElementTarget;
+  /**
+   * Constrain the drag to one axis: the target gives the position along it and
+   * the drag holds its starting position on the other one. Sliders and
+   * scrubbers need this, because the anchors near either end of a track
+   * usually sit on a different row than the thumb.
+   */
+  axis?: "x" | "y";
   label?: string;
   delay?: number;
   description?: string;

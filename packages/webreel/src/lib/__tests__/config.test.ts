@@ -119,6 +119,30 @@ describe("validateStep", () => {
     );
   });
 
+  it("accepts a drag axis of x or y", () => {
+    for (const axis of ["x", "y"]) {
+      const errors = validate({
+        action: "drag",
+        from: { selector: "#thumb" },
+        to: { selector: "#end" },
+        axis,
+      });
+      expect(errors).toEqual([]);
+    }
+  });
+
+  it("rejects a drag axis that is not x or y", () => {
+    const errors = validate({
+      action: "drag",
+      from: { selector: "#thumb" },
+      to: { selector: "#end" },
+      axis: "horizontal",
+    });
+    expect(errors).toContainEqual(
+      expect.objectContaining({ path: "videos.x.steps[0].axis" }),
+    );
+  });
+
   it("validates moveTo requires text or selector", () => {
     const errors = validate({ action: "moveTo" });
     expect(errors).toContainEqual(

@@ -365,8 +365,31 @@ Drag from one element to another.
         Target element (<code>text</code>, <code>selector</code>, or <code>within</code>)
       </td>
     </tr>
+    <tr>
+      <td>
+        <code>axis</code>
+      </td>
+      <td>string</td>
+      <td>
+        <code>"x"</code> or <code>"y"</code>: lock the drag to one axis
+      </td>
+    </tr>
   </tbody>
 </table>
+
+Both endpoints are the centre of the resolved element. Setting `axis` takes only
+the position along that axis from the target and holds the starting position on
+the other one, which is what a slider or scrubber needs: the anchors near either
+end of a track usually sit on a different row than the thumb.
+
+```json
+{
+  "action": "drag",
+  "from": { "selector": "[data-testid='slider-weight']" },
+  "to": { "selector": "label[for='weight-input']" },
+  "axis": "x"
+}
+```
 
 ## moveTo
 
