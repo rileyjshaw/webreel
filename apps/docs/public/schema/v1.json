@@ -483,6 +483,11 @@
           "$ref": "#/$defs/elementTarget",
           "description": "Element to drag to."
         },
+        "axis": {
+          "type": "string",
+          "enum": ["x", "y"],
+          "description": "Lock the drag to one axis. The target supplies the position along that axis and the drag holds its starting position on the other one, which is what sliders and scrubbers need."
+        },
         "label": {
           "$ref": "#/$defs/label"
         },
