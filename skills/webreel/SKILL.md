@@ -189,7 +189,7 @@ Each step has an `action` field. Most steps accept optional `label`, `delay` (ms
 | `click`      | `text` or `selector`, `within`, `modifiers` | Click an element                   |
 | `type`       | `text`, `selector`, `within`, `charDelay`   | Type text into an input            |
 | `key`        | `key`, `target`                             | Press a key combo (e.g. `"cmd+s"`) |
-| `drag`       | `from`, `to` (element targets)              | Drag between two elements          |
+| `drag`       | `from`, `to` (element targets), `axis`      | Drag between two elements          |
 | `scroll`     | `x`, `y`, `selector`                        | Scroll the page or an element      |
 | `wait`       | `selector` or `text`, `timeout`             | Wait for an element to appear      |
 | `moveTo`     | `text` or `selector`, `within`              | Move cursor to an element          |

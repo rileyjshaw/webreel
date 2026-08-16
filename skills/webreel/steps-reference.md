@@ -97,6 +97,7 @@ Drag from one element to another.
 | `action` | `"drag"`      | yes      |                                                       |
 | `from`   | ElementTarget | yes      | Source element (`{ text?, selector?, within? }`)      |
 | `to`     | ElementTarget | yes      | Destination element (`{ text?, selector?, within? }`) |
+| `axis`   | `"x"`/`"y"`   | no       | Lock the drag to one axis (see below)                 |
 
 ```json
 {
@@ -104,6 +105,22 @@ Drag from one element to another.
   "from": { "text": "Task A", "within": ".column-todo" },
   "to": { "selector": ".card-list", "within": ".column-done" },
   "delay": 600
+}
+```
+
+Both endpoints are the centre of the resolved element. With `axis` set, the
+target only supplies the position along that axis and the drag holds its
+starting position on the other one. Sliders and scrubbers need this: the
+anchors near either end of a track usually sit on a different row than the
+thumb, so without a locked axis the pointer arrives at the end of the track on
+a slant.
+
+```json
+{
+  "action": "drag",
+  "from": { "selector": "[data-testid='slider-weight']" },
+  "to": { "selector": "label[for='weight-input']" },
+  "axis": "x"
 }
 ```
 

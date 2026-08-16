@@ -336,7 +336,7 @@ const KNOWN_STEP_KEYS: Record<string, Set<string>> = {
     "description",
   ]),
   key: new Set(["action", "key", "target", "label", "delay", "description"]),
-  drag: new Set(["action", "from", "to", "label", "delay", "description"]),
+  drag: new Set(["action", "from", "to", "axis", "label", "delay", "description"]),
   moveTo: new Set([
     "action",
     "text",
@@ -541,6 +541,9 @@ function validateStep(step: unknown, index: number): ValidationError[] {
         if (!t.text && !t.selector) {
           errors.push({ path: `${prefix}.to`, message: 'Requires "text" or "selector"' });
         }
+      }
+      if (s.axis !== undefined && s.axis !== "x" && s.axis !== "y") {
+        errors.push({ path: `${prefix}.axis`, message: 'Must be "x" or "y"' });
       }
       break;
     }

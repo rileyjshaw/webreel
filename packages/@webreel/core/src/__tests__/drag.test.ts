@@ -1,5 +1,26 @@
 import { describe, it, expect } from "vitest";
-import { stripGhostIdentity } from "../actions.js";
+import { dragEndpoints, stripGhostIdentity } from "../actions.js";
+
+const thumb = { x: 100, y: 380, width: 20, height: 16 };
+const anchor = { x: 900, y: 340, width: 44, height: 44 };
+
+describe("dragEndpoints", () => {
+  it("goes centre to centre by default", () => {
+    expect(dragEndpoints(thumb, anchor)).toEqual({ fx: 110, fy: 388, tx: 922, ty: 362 });
+  });
+
+  it('keeps the starting y when the axis is "x"', () => {
+    const { fy, ty, tx } = dragEndpoints(thumb, anchor, "x");
+    expect(ty).toBe(fy);
+    expect(tx).toBe(922);
+  });
+
+  it('keeps the starting x when the axis is "y"', () => {
+    const { fx, tx, ty } = dragEndpoints(thumb, anchor, "y");
+    expect(tx).toBe(fx);
+    expect(ty).toBe(362);
+  });
+});
 
 describe("stripGhostIdentity", () => {
   function fakeElement(

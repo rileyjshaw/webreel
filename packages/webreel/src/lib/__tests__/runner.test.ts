@@ -59,6 +59,16 @@ describe("formatStep", () => {
     expect(formatStep(0, step)).toBe("[step 0] drag");
   });
 
+  it("formats drag step with a locked axis", () => {
+    const step: Step = {
+      action: "drag",
+      from: { selector: "[data-testid='slider-weight']" },
+      to: { selector: "#track-end" },
+      axis: "x",
+    };
+    expect(formatStep(0, step)).toBe('[step 0] drag axis="x"');
+  });
+
   it("formats moveTo step", () => {
     const step: Step = { action: "moveTo", text: "Menu" };
     expect(formatStep(0, step)).toBe('[step 0] moveTo text="Menu"');
