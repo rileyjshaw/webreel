@@ -1,5 +1,5 @@
 import type { CDPClient, Point } from "./types.js";
-import { FRAME_MS, CAPTURE_CYCLE_MS } from "./types.js";
+import { FRAME_MS } from "./types.js";
 import type { RecordingContext } from "./actions.js";
 
 /**
